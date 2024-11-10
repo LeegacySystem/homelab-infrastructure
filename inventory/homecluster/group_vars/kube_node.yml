@@ -1,0 +1,15 @@
+---
+ansible_python_interpreter: auto 
+
+# OS/App verisons
+debian_kernel_ver: 6.1.0-26-amd64
+debian_package_source: "main"
+debian_os_release: bookworm
+
+common_packages:
+  - htop
+  - net-tools
+  - curl
+  - vim
+  - sudo
+  - unattended-upgrades
