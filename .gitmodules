@@ -1,0 +1,3 @@
+[submodule "01_kubespray_cluster_setup"]
+	path = 01_kubespray_cluster_setup
+	url = https://github.com/LeegacySystem/homelab-kubespray.git
