@@ -14,6 +14,7 @@ ansible.cfg
 setup.cfg
 requirements.txt
 cluster.yml
+scale.yml
 playbooks
 roles
 plugins

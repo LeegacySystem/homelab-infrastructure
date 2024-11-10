@@ -35,6 +35,7 @@ The inventory file `hosts.yml` in the root directory defines host groups, IP add
 
 # Clone the repo
 git clone git@github.com:LeegacySystem/homelab-infrastructure.git
+cd homelab-infrastructure
 
 # Init the submodule and sync the root inventory
 bash setup_submodules.sh
@@ -44,6 +45,9 @@ cd 00_precluster_setup
 ansible-playbook -i inventory/homecluster/hosts.yml setup.yml -b 
 
 # Deploy the cluster
-cd 01_kubespray_cluster_setup
-ansible-playbook -i inventory/homecluster/hosts.yml  --become --become-user=root cluster.yml
+cd ../01_kubespray_cluster_setup
+ansible-playbook -i inventory/homecluster/hosts.yml  -b cluster.yml
+
+# Scale the cluser by adding a node
+ansible-playbook -i inventory/homecluster/hosts.yml scale.yml -b
 ```
