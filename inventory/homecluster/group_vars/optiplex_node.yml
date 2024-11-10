@@ -1,6 +1,6 @@
 node_annotations:
-  node.longhorn.io/default-disks-config: '[{"name":"fast-ssd-disk", "path":"/mnt/data/longhorn-data","allowScheduling":true,"storageReserved":100000000000,"tags":["ssd"]}]'
-  node.longhorn.io/default-node-tags: '["ssd"]'
+  node.longhorn.io/default-disks-config: '[{\"name\":\"fast-ssd-disk\", \"path\":\"/mnt/data/longhorn-data\",\"allowScheduling\":true,\"storageReserved\":100000000000,\"tags\":[\"ssd\"]}]'
+  node.longhorn.io/default-node-tags: '[\"ssd\"]'
 
 node_labels:
   node-type: opt
