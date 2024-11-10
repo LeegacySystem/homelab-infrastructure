@@ -1,0 +1,4 @@
+# Ignore synced inventories
+00_precluster_setup/inventory
+01_kubespray_cluster_setup/inventory
+
