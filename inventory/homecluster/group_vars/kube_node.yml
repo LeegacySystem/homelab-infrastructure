@@ -13,3 +13,4 @@ common_packages:
   - vim
   - sudo
   - unattended-upgrades
+  - open-iscsi # required for longhorn

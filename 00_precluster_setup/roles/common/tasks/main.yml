@@ -143,6 +143,11 @@
     debug:
       var: timer_status.stdout_lines
 
+  - name: Ensure iscsid service is started # longhorn requirement
+    ansible.builtin.systemd:
+      name: iscsid
+      state: started
+      enabled: true
 
 # I might readd this later
 # # #   # - name: Drop rsyslog config file
