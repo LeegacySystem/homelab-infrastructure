@@ -10,10 +10,14 @@ cd 01_kubespray_cluster_setup
 git config core.sparseCheckout true
 
 cat > ../.git/modules/01_kubespray_cluster_setup/info/sparse-checkout <<EOL
-roles/adduser
-roles/download
-roles/etcd
-roles/kubernetes
+ansible.cfg
+setup.cfg
+requirements.txt
+cluster.yml
+playbooks
+roles
+plugins
+library
 EOL
 
 # # Clear all existing files in the working directory (BE CAREFUL, this removes untracked files)

@@ -43,6 +43,7 @@ bash setup_submodules.sh
 cd 00_precluster_setup
 ansible-playbook -i inventory/homecluster/hosts.yml setup.yml -b 
 
-# REST TBD....
-
+# Deploy the cluster
+cd 01_kubespray_cluster_setup
+ansible-playbook -i inventory/homecluster/hosts.yml  --become --become-user=root cluster.yml
 ```
