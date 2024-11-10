@@ -1,0 +1,54 @@
+---
+  - name: Ensure /mnt/store1 directory exists
+    file:
+      path: /mnt/store1
+      state: directory
+      mode: '0755'
+      owner: root
+      group: root
+
+  - name: Ensure /mnt/storage directory exists
+    file:
+      path: /mnt/storage
+      state: directory
+      mode: '0755'
+      owner: root
+      group: root
+
+  - name: Retrieve UUID for /dev/sdb1
+    command: blkid -s UUID -o value /dev/sdb1
+    register: device_uuid
+    changed_when: false  # Ensure it doesn’t show as changed each time
+
+  - name: Append first line with UUID to fstab
+    lineinfile:
+      path: /etc/fstab
+      line: 'UUID="{{ device_uuid.stdout }}" /mnt/store1 ext4 noauto 0 2'
+      state: present
+      create: yes
+      insertafter: EOF
+
+  - name: Append second line to fstab
+    lineinfile:
+      path: /etc/fstab
+      line: '/mnt/store1 /mnt/storage mergerfs cache.files=partial,dropcacheonclose=true,category.create=mfs 0 0'
+      state: present
+      create: yes
+      insertafter: EOF
+
+  - name: Check if mergerfs is already installed
+    shell: dpkg-query -W -f='${Status}' mergerfs 2>/dev/null | grep -c "install ok installed"
+    register: mergerfs_installed
+    changed_when: false
+    ignore_errors: true # error simply means it is not installed
+
+  - name: Download mergerfs .deb package
+    get_url:
+      url: https://github.com/trapexit/mergerfs/releases/download/2.40.2/mergerfs_2.40.2.debian-bookworm_amd64.deb
+      dest: /tmp/mergerfs_2.40.2.debian-bookworm_amd64.deb
+    when: mergerfs_installed.stdout == "0"
+
+  - name: Install mergerfs from .deb package
+    apt:
+      deb: /tmp/mergerfs_2.40.2.debian-bookworm_amd64.deb
+    when: mergerfs_installed.stdout == "0"

@@ -1,0 +1,15 @@
+---
+- name: Check local ansible version
+  import_playbook: playbooks/ansible_version.yml
+
+- hosts: kube_node
+  roles:
+    - { role: common, tags: common }
+
+- hosts: optiplex_node
+  roles:
+    - { role: optiplex, tags: optiplex, run_once: true}
+      
+- hosts: nas_node
+  roles:
+    - { role: nas, tags: nas, run_once: true}

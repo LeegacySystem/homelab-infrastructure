@@ -1,0 +1,155 @@
+---
+  - name: Remove python 2.7
+    apt:
+      name: python2.7-minimal
+      state: absent
+      purge: true
+
+  - name: Replace apt release
+    become: true
+    template:
+      src: sources.list.j2
+      dest: /etc/apt/sources.list
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: Update cache
+    become: true
+    apt:
+      update_cache: yes
+
+  - name: Install linux kernel
+    apt:
+      name: "linux-image-{{ debian_kernel_ver }}"
+      state: present
+      autoremove: true
+
+  - name: Upgrade the OS 
+    apt:
+      upgrade: dist
+    tags: common_os_setup
+
+  - name: Check if reboot is required
+    stat: 
+      path: /var/run/reboot-required
+    register: reboot_required
+    tags: common_os_setup
+
+  - name: Reboot box if kernel/libs updated and requested by the system
+    shell: sleep 10 && /sbin/shutdown -r now 'Rebooting box to update system libs/kernel as needed' 
+    args:
+        removes: /var/run/reboot-required
+    async: 300
+    poll: 0
+    ignore_errors: true
+    when: reboot_required.stat.exists == true
+    tags: common_os_setup
+
+  - name: Wait for system to become reachable again
+    wait_for_connection:
+        delay: 60
+        timeout: 300
+    when: reboot_required.stat.exists == true
+    tags: common_os_setup
+
+  - name: Verify new update (optional)
+    command: uname -mrs
+    register: uname_result
+    tags: common_os_setup
+
+  - name: Display new kernel version
+    debug:
+        var: uname_result.stdout_lines
+    tags: common_os_setup
+
+  - name: Install common packages
+    become: true
+    apt:
+      name: "{{ common_packages }}"
+      state: latest
+      autoremove: true
+
+  - name: Ensure bash_completion.d folder exists
+    become: true
+    file:
+      name: /etc/bash_completion.d/
+      state: directory
+      owner: root
+      group: root
+      mode: "0755"
+
+
+  - name: Copy unattended-upgrades configuration template
+    template:
+      src: templates/50unattended-upgrades.j2
+      dest: /etc/apt/apt.conf.d/50unattended-upgrades
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: Restart unattended-upgrades service
+    service:
+      name: unattended-upgrades
+      state: restarted
+
+  - name: Create unattended-upgrades.timer file
+    copy:
+      dest: /etc/systemd/system/unattended-upgrades.timer
+      content: |
+        [Unit]
+        Description=Daily Unattended Upgrades
+
+        [Timer]
+        OnCalendar=daily
+        RandomizedDelaySec=1h
+        Persistent=true
+
+        [Install]
+        WantedBy=timers.target
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: Create unattended-upgrades.service file
+    copy:
+      dest: /etc/systemd/system/unattended-upgrades.service
+      content: |
+        [Unit]
+        Description=Unattended Upgrades
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/unattended-upgrade
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: Reload systemd daemon
+    command: systemctl daemon-reload
+
+  - name: Enable and start unattended-upgrades.timer
+    systemd:
+      name: unattended-upgrades.timer
+      enabled: true
+      state: started
+
+  - name: Verify unattended-upgrades.timer status
+    command: systemctl list-timers unattended-upgrades.timer
+    register: timer_status
+    ignore_errors: true
+
+  - name: Display unattended-upgrades.timer status
+    debug:
+      var: timer_status.stdout_lines
+
+
+# I might readd this later
+# # #   # - name: Drop rsyslog config file
+# # #   #   template:
+# # #   #     src: rsyslog.conf.j2
+# # #   #     dest: /etc/rsyslog.conf
+# # #   #     owner: root
+# # #   #     group: root
+# # #   #     mode: '0644'
+# # #   #   notify: Restart rsyslog

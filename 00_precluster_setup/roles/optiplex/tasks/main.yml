@@ -1,0 +1,47 @@
+---
+  - name: Temp set contrib non-free in apt sources
+    ansible.builtin.replace:
+      path: /etc/apt/sources.list
+      regexp: '{{ debian_os_release }} {{ debian_package_source }}'
+      replace: '{{ debian_os_release }} {{ debian_package_source }} contrib non-free'
+
+  - name: Update cache
+    apt:
+      update_cache: yes
+
+  - name: Install Atheros drivers
+    apt:
+      name: firmware-atheros 
+      state: present
+
+  - name: Install realtek drivers
+    apt:
+      name: firmware-realtek  
+      state: present
+    
+  - name: Install misc (intel) drivers
+    apt:
+      name: firmware-misc-nonfree   
+      state: present
+
+  - name: Unset contrib non-free in apt sources
+    ansible.builtin.replace:
+      path: /etc/apt/sources.list
+      regexp: '{{ debian_os_release }} {{ debian_package_source }} contrib non-free'
+      replace: '{{ debian_os_release }} {{ debian_package_source }}'
+
+  - name: Ensure /mnt/data directory exists
+    file:
+      path: /mnt/data
+      state: directory
+      mode: '0755'
+      owner: root
+      group: root
+
+  - name: Append mount to fstab
+    lineinfile:
+      path: /etc/fstab
+      line: "/dev/sda1 /mnt/data ext4 defaults 0 0"
+      state: present
+      create: yes
+      insertafter: EOF

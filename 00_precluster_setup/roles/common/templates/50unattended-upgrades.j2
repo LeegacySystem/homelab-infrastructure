@@ -1,0 +1,13 @@
+Unattended-Upgrade::Allowed-Origins {
+    "${distro_id}:${distro_codename}-security";
+};
+
+Unattended-Upgrade::Package-Blacklist {
+
+};
+
+# Uncomment the following line if you want to enable ESM security updates (optional)
+# "${distro_id}ESM:${distro_codename}-infra-security";
+
+Unattended-Upgrade::Verbose "0";
+Unattended-Upgrade::Debug "false";
