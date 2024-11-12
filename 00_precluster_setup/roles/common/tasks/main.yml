@@ -149,6 +149,23 @@
       state: started
       enabled: true
 
+  ## Load module for longhorn, I should probably do this in optiplex tasks
+  ## but laziness lands it here.
+  - name: Check if dm_crypt module is loaded
+    shell: lsmod | grep -w "dm_crypt"
+    register: dm_crypt_loaded
+    ignore_errors: yes
+
+  - name: Load dm_crypt kernel module if not already loaded
+    ansible.builtin.shell: modprobe dm_crypt
+    when: dm_crypt_loaded.rc != 0
+
+  - name: Ensure dm_crypt is listed in /etc/modules to load at boot
+    lineinfile:
+      path: /etc/modules
+      line: dm_crypt
+      state: present
+
 # I might readd this later
 # # #   # - name: Drop rsyslog config file
 # # #   #   template:
