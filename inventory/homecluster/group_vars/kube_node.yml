@@ -14,3 +14,5 @@ common_packages:
   - sudo
   - unattended-upgrades
   - open-iscsi # required for longhorn
+  - cryptsetup # required for longhorn
+  - nfs-common # required for longhorn
