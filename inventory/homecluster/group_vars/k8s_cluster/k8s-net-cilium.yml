@@ -4,7 +4,7 @@
 # Log-level
 # cilium_debug: false
 
-# cilium_mtu: ""
+cilium_mtu: "1450"
 # cilium_enable_ipv4: true
 # cilium_enable_ipv6: false
 
@@ -42,7 +42,7 @@ cilium_l2announcements: false
 # cilium_cpu_requests: 100m
 
 # Overlay Network Mode
-# cilium_tunnel_mode: vxlan
+cilium_tunnel_mode: vxlan
 
 # LoadBalancer Mode (snat/dsr/hybrid) Ref: https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/#dsr-mode
 # cilium_loadbalancer_mode: snat
@@ -99,7 +99,7 @@ cilium_l2announcements: false
 # direct routing and the Kubernetes CIDR is included in the native routing CIDR,
 # the user must configure the routes to reach pods, either manually or by
 # setting the auto-direct-node-routes flag.
-# cilium_native_routing_cidr: ""
+cilium_native_routing_cidr: "10.244.0.0/16"
 
 # Allows to explicitly specify the IPv6 CIDR for native routing.
 # cilium_native_routing_cidr_ipv6: ""
@@ -124,13 +124,13 @@ cilium_l2announcements: false
 # IP Masquerade Agent
 # https://docs.cilium.io/en/stable/concepts/networking/masquerading/
 # By default, all packets from a pod destined to an IP address outside of the cilium_native_routing_cidr range are masqueraded
-# cilium_ip_masq_agent_enable: false
+cilium_ip_masq_agent_enable: true
 
 ### A packet sent from a pod to a destination which belongs to any CIDR from the nonMasqueradeCIDRs is not going to be masqueraded
-# cilium_non_masquerade_cidrs:
+cilium_non_masquerade_cidrs:
 #   - 10.0.0.0/8
 #   - 172.16.0.0/12
-#   - 192.168.0.0/16
+  - 192.168.0.0/24
 #   - 100.64.0.0/10
 #   - 192.0.0.0/24
 #   - 192.0.2.0/24
@@ -179,7 +179,7 @@ cilium_l2announcements: false
 
 # IP address management mode for v1.9+.
 # https://docs.cilium.io/en/v1.9/concepts/networking/ipam/
-# cilium_ipam_mode: kubernetes
+cilium_ipam_mode: kubernetes
 
 # Extra arguments for the Cilium agent
 # cilium_agent_custom_args: []
@@ -239,13 +239,13 @@ cilium_l2announcements: false
 
 # -- Enables masquerading of IPv4 traffic leaving the node from endpoints.
 # Available for Cilium v1.10 and up
-# cilium_enable_ipv4_masquerade: true
+cilium_enable_ipv4_masquerade: true
 # -- Enables masquerading of IPv6 traffic leaving the node from endpoints.
 # Available for Cilium v1.10 and up
 # cilium_enable_ipv6_masquerade: true
 
 # -- Enable native IP masquerade support in eBPF
-# cilium_enable_bpf_masquerade: false
+cilium_enable_bpf_masquerade: false
 
 # -- Configure whether direct routing mode should route traffic via
 # host stack (true) or directly and more efficiently out of BPF (false) if
