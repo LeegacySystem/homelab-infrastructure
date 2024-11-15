@@ -75,7 +75,7 @@ cilium_kube_proxy_replacement: strict
 # Unique ID of the cluster. Must be unique across all connected clusters and
 # in the range of 1 and 255. Only relevant when building a mesh of clusters.
 # This value is not defined by default
-# cilium_cluster_id:
+cilium_cluster_id: 1
 
 # Deploy cilium even if kube_network_plugin is not cilium.
 # This enables to deploy cilium alongside another CNI to replace kube-proxy.
@@ -209,7 +209,7 @@ cilium_ipam_mode: kubernetes
 # cilium_operator_custom_args: []
 
 # Name of the cluster. Only relevant when building a mesh of clusters.
-# cilium_cluster_name: default
+cilium_cluster_name: homelab
 
 # Make Cilium take ownership over the `/etc/cni/net.d` directory on the node, renaming all non-Cilium CNI configurations to `*.cilium_bak`.
 # This ensures no Pods can be scheduled using other CNI plugins during Cilium agent downtime.
