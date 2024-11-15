@@ -245,7 +245,7 @@ cilium_enable_ipv4_masquerade: true
 # cilium_enable_ipv6_masquerade: true
 
 # -- Enable native IP masquerade support in eBPF
-cilium_enable_bpf_masquerade: false
+cilium_enable_bpf_masquerade: true
 
 # -- Configure whether direct routing mode should route traffic via
 # host stack (true) or directly and more efficiently out of BPF (false) if
