@@ -42,13 +42,13 @@ cilium_l2announcements: false
 # cilium_cpu_requests: 100m
 
 # Overlay Network Mode
-cilium_tunnel_mode: vxlan
+# cilium_tunnel_mode: vxlan
 
 # LoadBalancer Mode (snat/dsr/hybrid) Ref: https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/#dsr-mode
-cilium_loadbalancer_mode: snat
+# cilium_loadbalancer_mode: snat
 
 # Optional features
-cilium_enable_prometheus: true
+# cilium_enable_prometheus: false
 # Enable if you want to make use of hostPort mappings
 # cilium_enable_portmap: false
 # Monitor aggregation level (none/low/medium/maximum)
@@ -59,7 +59,7 @@ cilium_enable_prometheus: true
 # Only effective when monitor aggregation is set to "medium" or higher.
 # cilium_monitor_aggregation_flags: "all"
 # Kube Proxy Replacement mode (strict/partial)
-cilium_kube_proxy_replacement: strict
+# cilium_kube_proxy_replacement: strict
 
 # If upgrading from Cilium < 1.5, you may want to override some of these options
 # to prevent service disruptions. See also:
@@ -75,7 +75,7 @@ cilium_kube_proxy_replacement: strict
 # Unique ID of the cluster. Must be unique across all connected clusters and
 # in the range of 1 and 255. Only relevant when building a mesh of clusters.
 # This value is not defined by default
-cilium_cluster_id: 1
+# cilium_cluster_id:
 
 # Deploy cilium even if kube_network_plugin is not cilium.
 # This enables to deploy cilium alongside another CNI to replace kube-proxy.
@@ -99,7 +99,7 @@ cilium_cluster_id: 1
 # direct routing and the Kubernetes CIDR is included in the native routing CIDR,
 # the user must configure the routes to reach pods, either manually or by
 # setting the auto-direct-node-routes flag.
-cilium_native_routing_cidr: "10.244.0.0/16"
+# cilium_native_routing_cidr: ""
 
 # Allows to explicitly specify the IPv6 CIDR for native routing.
 # cilium_native_routing_cidr_ipv6: ""
@@ -124,13 +124,13 @@ cilium_native_routing_cidr: "10.244.0.0/16"
 # IP Masquerade Agent
 # https://docs.cilium.io/en/stable/concepts/networking/masquerading/
 # By default, all packets from a pod destined to an IP address outside of the cilium_native_routing_cidr range are masqueraded
-cilium_ip_masq_agent_enable: true
+# cilium_ip_masq_agent_enable: false
 
 ### A packet sent from a pod to a destination which belongs to any CIDR from the nonMasqueradeCIDRs is not going to be masqueraded
-cilium_non_masquerade_cidrs:
+# cilium_non_masquerade_cidrs:
 #   - 10.0.0.0/8
 #   - 172.16.0.0/12
-  - 192.168.0.0/24
+#   - 192.168.0.0/16
 #   - 100.64.0.0/10
 #   - 192.0.0.0/24
 #   - 192.0.2.0/24
@@ -166,9 +166,9 @@ cilium_hubble_metrics:
 - icmp
 - http
 ### Enable Hubble install
-# cilium_hubble_install: false
+cilium_hubble_install: true
 ### Enable auto generate certs if cilium_hubble_install: true
-# cilium_hubble_tls_generate: false
+cilium_hubble_tls_generate: true
 
 ### Tune cilium_hubble_event_buffer_capacity & cilium_hubble_event_queue_size values to avoid dropping events when hubble is under heavy load
 ### Capacity of Hubble events buffer. The provided value must be one less than an integer power of two and no larger than 65535
@@ -179,7 +179,7 @@ cilium_hubble_metrics:
 
 # IP address management mode for v1.9+.
 # https://docs.cilium.io/en/v1.9/concepts/networking/ipam/
-cilium_ipam_mode: kubernetes
+# cilium_ipam_mode: kubernetes
 
 # Extra arguments for the Cilium agent
 # cilium_agent_custom_args: []
@@ -209,7 +209,7 @@ cilium_ipam_mode: kubernetes
 # cilium_operator_custom_args: []
 
 # Name of the cluster. Only relevant when building a mesh of clusters.
-cilium_cluster_name: homelab
+# cilium_cluster_name: default
 
 # Make Cilium take ownership over the `/etc/cni/net.d` directory on the node, renaming all non-Cilium CNI configurations to `*.cilium_bak`.
 # This ensures no Pods can be scheduled using other CNI plugins during Cilium agent downtime.
@@ -239,13 +239,108 @@ cilium_cluster_name: homelab
 
 # -- Enables masquerading of IPv4 traffic leaving the node from endpoints.
 # Available for Cilium v1.10 and up
-cilium_enable_ipv4_masquerade: true
+# cilium_enable_ipv4_masquerade: true
 # -- Enables masquerading of IPv6 traffic leaving the node from endpoints.
 # Available for Cilium v1.10 and up
 # cilium_enable_ipv6_masquerade: true
 
 # -- Enable native IP masquerade support in eBPF
-cilium_enable_bpf_masquerade: true
+# cilium_enable_bpf_masquerade: false
+
+# -- Enable BGP Control Plane
+# cilium_enable_bgp_control_plane: false
+
+# -- Configure Loadbalancer IP Pools
+# cilium_loadbalancer_ip_pools:
+#   - name: "blue-pool"
+#     cidrs:
+#       - "10.0.10.0/24"
+
+# -- Configure BGP Instances (New bgpv2 API v1.16+)
+# cilium_bgp_cluster_configs:
+#   - name: "cilium-bgp"
+#     spec:
+#       bgpInstances:
+#       - name: "instance-64512"
+#         localASN: 64512
+#         peers:
+#         - name: "peer-64512-tor1"
+#           peerASN: 64512
+#           peerAddress: '10.47.1.1'
+#           peerConfigRef:
+#             name: "cilium-peer"
+#       nodeSelector:
+#         matchExpressions:
+#           - {key: somekey, operator: NotIn, values: ['never-used-value']}
+
+# -- Configure BGP Peers (New bgpv2 API v1.16+)
+# cilium_bgp_peer_configs:
+#   - name: cilium-peer
+#     spec:
+#       # authSecretRef: bgp-auth-secret
+#       gracefulRestart:
+#         enabled: true
+#         restartTimeSeconds: 15
+#       families:
+#         - afi: ipv4
+#           safi: unicast
+#           advertisements:
+#             matchLabels:
+#               advertise: "bgp"
+#         - afi: ipv6
+#           safi: unicast
+#           advertisements:
+#             matchLabels:
+#               advertise: "bgp"
+
+# -- Configure BGP Advertisements (New bgpv2 API v1.16+)
+# cilium_bgp_advertisements:
+#   - name: bgp-advertisements
+#     labels:
+#       advertise: bgp
+#     spec:
+#       advertisements:
+#         # - advertisementType: "PodCIDR"
+#         #   attributes:
+#         #     communities:
+#         #       standard: [ "64512:99" ]
+#         - advertisementType: "Service"
+#           service:
+#             addresses:
+#               - ClusterIP
+#               - ExternalIP
+#               - LoadBalancerIP
+#           selector:
+#             matchExpressions:
+#                 - {key: somekey, operator: NotIn, values: ['never-used-value']}
+
+# -- Configure BGP Node Config Overrides (New bgpv2 API v1.16+)
+# cilium_bgp_node_config_overrides:
+#   - name: bgp-node-config-override
+#     spec:
+#     bgpInstances:
+#       - name: "instance-65000"
+#         routerID: "192.168.10.1"
+#         localPort: 1790
+#         peers:
+#           - name: "peer-65000-tor1"
+#             localAddress: fd00:10:0:2::2
+#           - name: "peer-65000-tor2"
+#             localAddress: fd00:11:0:2::2
+
+# -- Configure BGP Peers (Legacy v1.16+)
+# cilium_bgp_peering_policies:
+#   - name: "01-bgp-peering-policy"
+#     spec:
+#       virtualRouters:
+#         - localASN: 64512
+#           exportPodCIDR: false
+#           neighbors:
+#           - peerAddress: '10.47.1.1/24'
+#             peerASN: 64512
+#           serviceSelector:
+#               matchExpressions:
+#               - {key: somekey, operator: NotIn, values: ['never-used-value']}
 
 # -- Configure whether direct routing mode should route traffic via
 # host stack (true) or directly and more efficiently out of BPF (false) if
