@@ -45,3 +45,12 @@
       state: present
       create: yes
       insertafter: EOF
+
+  - name: Reload systemd daemon
+    command: systemctl daemon-reload
+
+  - name: Reload fstab without rebooting
+    command: mount -a
+    become: true
+    register: mount_output
+    changed_when: mount_output.rc == 0
