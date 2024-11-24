@@ -19,6 +19,7 @@ playbooks
 roles
 plugins
 library
+reset.yml
 EOL
 
 # # Clear all existing files in the working directory (BE CAREFUL, this removes untracked files)
