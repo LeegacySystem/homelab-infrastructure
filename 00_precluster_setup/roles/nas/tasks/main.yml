@@ -1,54 +1,159 @@
 ---
-  - name: Ensure /mnt/store1 directory exists
-    file:
-      path: /mnt/store1
-      state: directory
-      mode: '0755'
-      owner: root
-      group: root
+- name: Ensure mount points exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /mnt/store1
+    - /mnt/store2
+    - /mnt/storage
 
-  - name: Ensure /mnt/storage directory exists
-    file:
-      path: /mnt/storage
-      state: directory
-      mode: '0755'
-      owner: root
-      group: root
+- name: Allow "allow_other" in fuse
+  ansible.builtin.lineinfile:
+    path: /etc/fuse.conf
+    line: "user_allow_other"
+    state: present
+    create: yes
+    insertafter: EOF
 
-  - name: Retrieve UUID for /dev/sdb1
-    command: blkid -s UUID -o value /dev/sdb1
-    register: device_uuid
-    changed_when: false  # Ensure it doesn’t show as changed each time
+# --- Discover UUIDs by label (robust against /dev/sdX changes) ---
+- name: Get UUID for store1
+  ansible.builtin.command: blkid -t LABEL={{ store1_label }} -s UUID -o value
+  register: store1_uuid
+  changed_when: false
+  check_mode: no
 
-  - name: Append first line with UUID to fstab
-    lineinfile:
-      path: /etc/fstab
-      line: 'UUID="{{ device_uuid.stdout }}" /mnt/store1 ext4 noauto 0 2'
-      state: present
-      create: yes
-      insertafter: EOF
+- name: Get UUID for store2
+  ansible.builtin.command: blkid -t LABEL={{ store2_label }} -s UUID -o value
+  register: store2_uuid
+  changed_when: false
+  check_mode: no
 
-  - name: Append second line to fstab
-    lineinfile:
-      path: /etc/fstab
-      line: '/mnt/store1 /mnt/storage mergerfs cache.files=partial,dropcacheonclose=true,category.create=mfs 0 0'
-      state: present
-      create: yes
-      insertafter: EOF
+- name: Fail fast if labels not found
+  ansible.builtin.assert:
+    that:
+      - store1_uuid.stdout is defined and store1_uuid.stdout | length > 0
+      - store2_uuid.stdout is defined and store2_uuid.stdout | length > 0
+    fail_msg: "Disk labels not found. Check LABELs {{ store1_label }} / {{ store2_label }}."
 
-  - name: Check if mergerfs is already installed
-    shell: dpkg-query -W -f='${Status}' mergerfs 2>/dev/null | grep -c "install ok installed"
-    register: mergerfs_installed
-    changed_when: false
-    ignore_errors: true # error simply means it is not installed
+# --- Manage mergerfs package from apt (pinned by version var) ---
+- name: Install mergerfs {{ mergerfs_version }} from apt
+  ansible.builtin.apt:
+    name: "mergerfs={{ mergerfs_version }}"
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
 
-  - name: Download mergerfs .deb package
-    get_url:
-      url: https://github.com/trapexit/mergerfs/releases/download/2.40.2/mergerfs_2.40.2.debian-bookworm_amd64.deb
-      dest: /tmp/mergerfs_2.40.2.debian-bookworm_amd64.deb
-    when: mergerfs_installed.stdout == "0"
+- name: Hold mergerfs at {{ mergerfs_version }}
+  ansible.builtin.dpkg_selections:
+    name: mergerfs
+    selection: hold
+  when: mergerfs_hold | bool
 
-  - name: Install mergerfs from .deb package
-    apt:
-      deb: /tmp/mergerfs_2.40.2.debian-bookworm_amd64.deb
-    when: mergerfs_installed.stdout == "0"
+- name: Unhold mergerfs (allow upgrades)
+  ansible.builtin.dpkg_selections:
+    name: mergerfs
+    selection: install
+  when: not (mergerfs_hold | bool)
+
+# --- Mount branches (writes fstab + mounts) ---
+- name: Mount /mnt/store1
+  ansible.posix.mount:
+    path: /mnt/store1
+    src: "UUID={{ store1_uuid.stdout }}"
+    fstype: ext4
+    opts: "noatime,nofail"
+    state: mounted
+
+- name: Mount /mnt/store2
+  ansible.posix.mount:
+    path: /mnt/store2
+    src: "UUID={{ store2_uuid.stdout }}"
+    fstype: ext4
+    opts: "noatime,nofail"
+    state: mounted
+
+# --- MergerFS pool (fstab + mount/remount if options changed) ---
+- name: Mount /mnt/storage (mergerfs)
+  ansible.posix.mount:
+    path: /mnt/storage
+    src: "/mnt/store1:/mnt/store2"
+    fstype: fuse.mergerfs
+    opts: "{{ mergerfs_opts }}"
+    state: mounted
+
+# --- Clean up legacy lines (optional) ---
+- name: Remove legacy /mnt/store1 line with quotes/noauto
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^UUID=".*"\s+/mnt/store1\s+ext4\s+noauto'
+    state: absent
+
+- name: Remove legacy mergerfs line (old options)
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^/mnt/store1\s+/mnt/storage\s+mergerfs\s+'
+    state: absent
+
+# --- Persistent readahead via udev (match by disk SERIAL) ---
+
+# Resolve devices from UUIDs
+- name: Resolve device paths
+  ansible.builtin.command: readlink -f /dev/disk/by-uuid/{{ item }}
+  loop:
+    - "{{ store1_uuid.stdout }}"
+    - "{{ store2_uuid.stdout }}"
+  register: devpaths
+  changed_when: false
+  check_mode: no
+
+- name: Derive base disk names (strip partition number)
+  ansible.builtin.set_fact:
+    store1_disk: "{{ (devpaths.results[0].stdout | regex_replace('[0-9]+$','')) | basename }}"
+    store2_disk: "{{ (devpaths.results[1].stdout | regex_replace('[0-9]+$','')) | basename }}"
+
+# Get ID_SERIAL (fall back to ID_SERIAL_SHORT)
+- name: Get ID_SERIAL for store1 disk
+  ansible.builtin.shell: >
+    udevadm info --query=property --name=/dev/{{ store1_disk }} |
+    awk -F= '/^ID_SERIAL=|^ID_SERIAL_SHORT=/{print $2; exit}'
+  register: store1_serial
+  changed_when: false
+  check_mode: no
+
+- name: Get ID_SERIAL for store2 disk
+  ansible.builtin.shell: >
+    udevadm info --query=property --name=/dev/{{ store2_disk }} |
+    awk -F= '/^ID_SERIAL=|^ID_SERIAL_SHORT=/{print $2; exit}'
+  register: store2_serial
+  changed_when: false
+  check_mode: no
+
+- name: Install udev rule for read-ahead (persistent)
+  ansible.builtin.copy:
+    dest: /etc/udev/rules.d/85-readahead-media.rules
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      # Set read_ahead_kb for media disks (2 MiB here)
+      ACTION=="add|change", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", ENV{ID_SERIAL}=="{{ store1_serial.stdout }}", ATTR{queue/read_ahead_kb}="{{ readahead_kb }}"
+      ACTION=="add|change", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", ENV{ID_SERIAL}=="{{ store2_serial.stdout }}", ATTR{queue/read_ahead_kb}="{{ readahead_kb }}"
+  when:
+    - store1_serial.stdout | length > 0
+    - store2_serial.stdout | length > 0
+  notify:
+    - Reload udev rules
+    - Trigger udev
+
+# Also set it NOW (runtime) — skip during --check
+- name: Set runtime read-ahead for store1
+  ansible.builtin.command: bash -lc "echo {{ readahead_kb }} > /sys/block/{{ store1_disk }}/queue/read_ahead_kb"
+  when: not ansible_check_mode
+
+- name: Set runtime read-ahead for store2
+  ansible.builtin.command: bash -lc "echo {{ readahead_kb }} > /sys/block/{{ store2_disk }}/queue/read_ahead_kb"
+  when: not ansible_check_mode

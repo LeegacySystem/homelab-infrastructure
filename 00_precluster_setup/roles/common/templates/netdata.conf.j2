@@ -1,0 +1,14 @@
+[global]
+  # default is dbengine; keep it
+  memory mode = dbengine
+
+[web]
+  default port = {{ netdata_port }}
+  bind to = {{ netdata_bind }}
+  allow connections from = {{ (netdata_allow_from | join(' ')) }}
+  allow dashboard from  = {{ (netdata_allow_from | join(' ')) }}
+
+# Tip: you can later tune retention/disk with:
+# [db]
+#   mode = dbengine
+#   dbengine multihost disk space MB = 2048

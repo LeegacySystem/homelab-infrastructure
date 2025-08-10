@@ -1,0 +1,14 @@
+---
+# Labels → UUIDs
+store1_label: "STORE1"
+store2_label: "disk2"
+
+# Read-ahead (KiB). 2048 KiB == 4096 sectors.
+readahead_kb: 2048
+
+# Package control
+mergerfs_version: "2.33.5-1"
+mergerfs_hold: true
+
+# MergerFS mount options
+mergerfs_opts: "cache.files=partial,dropcacheonclose=true,category.create=mfs,allow_other,use_ino,minfreespace=100G,moveonenospc=true,fsname=mergerfs,x-systemd.requires-mounts-for=/mnt/store1,x-systemd.requires-mounts-for=/mnt/store2"

@@ -175,3 +175,73 @@
 # # #   #     group: root
 # # #   #     mode: '0644'
 # # #   #   notify: Restart rsyslog
+
+  # --- Netdata install & config ------------------------------------------------
+  - block:
+      - name: Ensure Netdata deps
+        ansible.builtin.apt:
+          name:
+            - curl
+            - ca-certificates
+            - gnupg
+            - lsb-release
+          state: present
+          update_cache: yes
+
+      - name: Install Netdata from distro (simple & stable)
+        ansible.builtin.apt:
+          name: netdata
+          state: present
+          update_cache: yes
+
+      # Optional: kernel headers for eBPF collector (per host toggle)
+      - name: Install kernel headers for eBPF (optional)
+        ansible.builtin.apt:
+          name: "linux-headers-{{ ansible_kernel }}"
+          state: present
+        when: netdata_install_headers | bool
+
+      - name: Render /etc/netdata/netdata.conf
+        ansible.builtin.template:
+          src: netdata.conf.j2
+          dest: /etc/netdata/netdata.conf
+          owner: root
+          group: root
+          mode: '0644'
+        notify: Restart netdata
+
+      - name: Flush handlers (restart netdata now)
+        ansible.builtin.meta: flush_handlers
+
+      - name: Wait for Netdata port
+        ansible.builtin.wait_for:
+          host: "127.0.0.1"
+          port: "{{ netdata_port }}"
+          delay: 1
+          timeout: 30
+          state: started
+        when: not ansible_check_mode
+
+      # If you use UFW or firewalld, open the port (comment out if not needed)
+      - name: Allow Netdata on UFW (optional)
+        ansible.builtin.command: ufw allow {{ netdata_port }}/tcp
+        changed_when: false
+        failed_when: false
+
+      - name: Enable & start Netdata
+        ansible.builtin.systemd:
+          name: netdata
+          enabled: true
+          state: started
+
+      # Quick health check (works even if bound to 127.0.0.1)
+      - name: Netdata API info check
+        ansible.builtin.uri:
+          url: "http://127.0.0.1:{{ netdata_port }}/api/v1/info"
+          return_content: yes
+          status_code: 200
+        register: netdata_info
+        failed_when: netdata_info.status != 200
+        changed_when: false
+    when: common_install_netdata | bool
+    tags: [netdata]

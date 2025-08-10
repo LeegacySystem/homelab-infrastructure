@@ -1,0 +1,13 @@
+# Turn on/off from inventory
+common_install_netdata: true
+
+# Basic listen/security
+netdata_bind: "0.0.0.0"         # "127.0.0.1" if you only want local
+netdata_port: 19999
+netdata_allow_from:
+  - "localhost"
+  - "127.0.0.1"
+  - "192.168.0.*"            # adjust to your LAN(s)
+
+# (Optional) enable richer kernel metrics on nodes that need it
+netdata_install_headers: false   # set true for eBPF on selected hosts
