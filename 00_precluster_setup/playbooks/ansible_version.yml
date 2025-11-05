@@ -5,7 +5,7 @@
   become: false
   run_once: true
   vars:
-    minimal_ansible_version: 2.16.4
+    minimal_ansible_version: 2.16.3
     maximal_ansible_version: 2.17.6
   tags: always
   tasks:

@@ -12,3 +12,39 @@ mergerfs_hold: true
 
 # MergerFS mount options
 mergerfs_opts: "cache.files=partial,dropcacheonclose=true,category.create=mfs,allow_other,use_ino,minfreespace=100G,moveonenospc=true,fsname=mergerfs,x-systemd.requires-mounts-for=/mnt/store1,x-systemd.requires-mounts-for=/mnt/store2"
+
+# NFS Server Configuration
+nfs_export_dirs:
+  - path: /export/media
+    owner: lee
+    group: lee
+    mode: '0755'
+  - path: /export/nextcloud-data
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+# NFS clients (Kubernetes nodes)
+nfs_clients:
+  - ip: 192.168.0.101  # k8s-opt-01
+    anonuid: 1000
+    anongid: 1000
+  - ip: 192.168.0.102  # k8s-opt-02
+    anonuid: 1000
+    anongid: 1000
+  - ip: 192.168.0.100  # k8s-nas-00 (self)
+    anonuid: 1000
+    anongid: 1000
+
+# Nextcloud NFS clients (requires www-data uid/gid 33)
+nfs_nextcloud_clients:
+  - ip: 192.168.0.101  # k8s-opt-01
+  - ip: 192.168.0.102  # k8s-opt-02
+  - ip: 192.168.0.100  # k8s-nas-00 (self)
+
+# Media exports
+nfs_media_exports:
+  - client: 192.168.0.36
+    anonuid: 0
+    anongid: 0
+    insecure: true  # Required for Windows NFSv3

@@ -1,0 +1,68 @@
+---
+# NFS Server Configuration for k8s-nas-00
+# Exports /export/media and /export/nextcloud-data to cluster nodes
+
+- name: Install NFS server packages
+  ansible.builtin.apt:
+    name:
+      - nfs-kernel-server
+      - nfs-common
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Ensure NFS export root directory exists
+  ansible.builtin.file:
+    path: /export
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create NFS export subdirectories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode | default('0755') }}"
+  loop: "{{ nfs_export_dirs }}"
+  when: nfs_export_dirs is defined
+
+- name: Bind mount media directory to NFS export
+  ansible.posix.mount:
+    path: /export/media
+    src: /mnt/storage/media
+    fstype: none
+    opts: bind
+    state: mounted
+
+- name: Bind mount nextcloud-data directory to NFS export
+  ansible.posix.mount:
+    path: /export/nextcloud-data
+    src: /mnt/storage/media/nextcloud-data
+    fstype: none
+    opts: bind
+    state: mounted
+
+- name: Configure /etc/exports
+  ansible.builtin.template:
+    src: exports.j2
+    dest: /etc/exports
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  notify: Reload NFS exports
+
+- name: Enable and start NFS server
+  ansible.builtin.systemd:
+    name: nfs-server.service
+    enabled: yes
+    state: started
+
+- name: Enable and start rpcbind (required for NFSv3 compatibility)
+  ansible.builtin.systemd:
+    name: rpcbind.service
+    enabled: yes
+    state: started

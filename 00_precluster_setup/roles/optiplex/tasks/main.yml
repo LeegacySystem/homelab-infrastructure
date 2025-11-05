@@ -1,4 +1,9 @@
 ---
+  # Import NFS client configuration
+  - name: Configure NFS client
+    ansible.builtin.include_tasks: nfs_client.yml
+    tags: nfs
+
   - name: Temp set contrib non-free in apt sources
     ansible.builtin.replace:
       path: /etc/apt/sources.list

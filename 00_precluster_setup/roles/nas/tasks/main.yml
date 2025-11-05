@@ -1,4 +1,9 @@
 ---
+# Import NFS server configuration
+- name: Configure NFS server
+  ansible.builtin.include_tasks: nfs_server.yml
+  tags: nfs
+
 - name: Ensure mount points exist
   ansible.builtin.file:
     path: "{{ item }}"

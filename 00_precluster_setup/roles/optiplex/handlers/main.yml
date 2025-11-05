@@ -1,0 +1,6 @@
+---
+- name: Restart NFS client services
+  ansible.builtin.systemd:
+    name: nfs-client.target
+    state: restarted
+  ignore_errors: yes

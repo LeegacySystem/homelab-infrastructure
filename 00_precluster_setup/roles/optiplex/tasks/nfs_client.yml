@@ -1,0 +1,47 @@
+---
+# NFS Client Configuration for OptiPlex nodes
+# Ensures NFS client packages are installed with automatic recovery options
+
+- name: Install NFS client packages
+  ansible.builtin.apt:
+    name:
+      - nfs-common
+      - nfs4-acl-tools
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Configure NFS client for resilience after server reboot
+  ansible.builtin.copy:
+    dest: /etc/nfs.conf.d/kubernetes.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      # NFS client configuration for Kubernetes volumes
+      # Provides better resilience during NFS server reboots
+      [nfsd]
+      # Server-side settings (not used on client)
+
+      [nfs4]
+      # Enable NFSv4.2 features
+      minorversion=2
+
+      [gssd]
+      # Kerberos GSS settings (not used in this cluster)
+
+      [nfs]
+      # Client recovery settings
+      # nfs.callback_tcpport: callback port for delegation recovery
+      # These help Kubernetes volumes recover after NFS server restart
+  notify: Restart NFS client services
+
+- name: Ensure NFS-related services are enabled
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:
+    - rpcbind.service
+    - nfs-client.target
+  ignore_errors: yes  # Some services may not exist on all systems

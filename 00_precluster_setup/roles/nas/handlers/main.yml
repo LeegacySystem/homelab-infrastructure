@@ -4,3 +4,7 @@
 
 - name: Trigger udev
   command: udevadm trigger --subsystem-match=block
+
+- name: Reload NFS exports
+  ansible.builtin.command: exportfs -ra
+  listen: "Reload NFS exports"
