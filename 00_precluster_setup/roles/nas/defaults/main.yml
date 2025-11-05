@@ -14,6 +14,8 @@ mergerfs_hold: true
 mergerfs_opts: "cache.files=partial,dropcacheonclose=true,category.create=mfs,allow_other,use_ino,minfreespace=100G,moveonenospc=true,fsname=mergerfs,x-systemd.requires-mounts-for=/mnt/store1,x-systemd.requires-mounts-for=/mnt/store2"
 
 # NFS Server Configuration
+nfs_server_threads: 12  # 3x CPU cores for I/O wait handling
+
 nfs_export_dirs:
   - path: /export/media
     owner: lee

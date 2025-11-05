@@ -2,18 +2,24 @@
 # Managed by Ansible - changes will be overwritten
 
 # NFSv4 root for Linux clients (fsid=0)
-{% for client in nfs_clients %}
-/export   {{ client.ip }}(rw,sync,no_subtree_check,fsid=0,all_squash,anonuid={{ client.anonuid | default(1000) }},anongid={{ client.anongid | default(1000) }}){{ ' \\' if not loop.last else '' }}
-{% if loop.last %}          {{ client.ip }}(rw,sync,no_subtree_check,all_squash,anonuid={{ client.anonuid | default(1000) }},anongid={{ client.anongid | default(1000) }}){% endif %}
+/export   {{ nfs_clients[0].ip }}(rw,sync,no_subtree_check,fsid=0,all_squash,anonuid={{ nfs_clients[0].anonuid | default(1000) }},anongid={{ nfs_clients[0].anongid | default(1000) }}) \
+{% for client in nfs_clients[1:] %}
+          {{ client.ip }}(rw,sync,no_subtree_check,fsid=0,all_squash,anonuid={{ client.anonuid | default(1000) }},anongid={{ client.anongid | default(1000) }}) \
+{% endfor %}
+{% for export in nfs_media_exports | default([]) %}
+          {{ export.client }}(rw,sync,no_subtree_check,all_squash,anonuid={{ export.anonuid | default(1000) }},anongid={{ export.anongid | default(1000) }})
 {% endfor %}
 
-# Media export for nodes and Windows clients
+# Explicit NFSv3 export of the actual directory for Windows
+# Using async for better performance
 {% for export in nfs_media_exports | default([]) %}
-/export/media {{ export.client }}(rw,sync,no_subtree_check,fsid=1,all_squash,anonuid={{ export.anonuid | default(0) }},anongid={{ export.anongid | default(0) }}{{ ',insecure' if export.insecure | default(false) else '' }})
+/export/media {{ export.client }}(rw,async,no_subtree_check,fsid=1,all_squash,anonuid={{ export.anonuid | default(0) }},anongid={{ export.anongid | default(0) }}{{ ',insecure' if export.insecure | default(false) else '' }})
 {% endfor %}
 
 # Nextcloud data export (www-data = uid/gid 33)
-{% for client in nfs_nextcloud_clients %}
-/export/nextcloud-data  {{ client.ip }}(rw,fsid=1,sync,no_subtree_check,root_squash,all_squash,anonuid=33,anongid=33){{ ' \\' if not loop.last else '' }}
-{% if loop.last %}          {{ client.ip }}(rw,fsid=1,sync,no_subtree_check,root_squash,all_squash,anonuid=33,anongid=33){% endif %}
+# Using sync for data safety (critical application data)
+/export/nextcloud-data  {{ nfs_nextcloud_clients[0].ip }}(rw,sync,no_subtree_check,fsid=2,root_squash,all_squash,anonuid=33,anongid=33) \
+{% for client in nfs_nextcloud_clients[1:] %}
+          {{ client.ip }}(rw,sync,no_subtree_check,fsid=2,root_squash,all_squash,anonuid=33,anongid=33){% if not loop.last %} \{% endif %}
+
 {% endfor %}

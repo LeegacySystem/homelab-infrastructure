@@ -55,6 +55,17 @@
     backup: yes
   notify: Reload NFS exports
 
+- name: Configure NFS server thread count
+  ansible.builtin.lineinfile:
+    path: /etc/default/nfs-kernel-server
+    regexp: '^RPCNFSDCOUNT='
+    line: 'RPCNFSDCOUNT={{ nfs_server_threads }}'
+    create: yes
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart NFS server
+
 - name: Enable and start NFS server
   ansible.builtin.systemd:
     name: nfs-server.service
